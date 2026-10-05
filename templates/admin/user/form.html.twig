@@ -1,0 +1,21 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ is_new ? 'Novo usuário' : 'Editar usuário' }} · Weekly News{% endblock %}
+{% block body %}
+    <a class="back-link" href="{{ path('admin_user_index') }}">← Usuários</a>
+    <section class="panel narrow">
+        <p class="eyebrow">Administração</p><h1>{{ is_new ? 'Novo participante' : 'Editar participante' }}</h1>
+        <p class="muted">{{ is_new ? 'Cadastre o acesso de quem vai participar da resenha.' : 'Deixe a senha em branco para manter a atual.' }}</p>
+        {% if is_self %}<p class="notice">Você não pode desativar sua própria conta ou remover seu acesso de administrador.</p>{% endif %}
+        {{ form_start(form) }}
+            {{ form_errors(form) }}
+            {{ form_row(form.name) }}
+            {{ form_row(form.email) }}
+            {{ form_errors(form.plainPassword) }}
+            {{ form_row(form.plainPassword.first) }}
+            {{ form_row(form.plainPassword.second) }}
+            {{ form_row(form.isAdmin) }}
+            {{ form_row(form.isActive) }}
+            <div class="actions"><button class="button" type="submit">{{ is_new ? 'Criar usuário' : 'Salvar alterações' }}</button><a href="{{ path('admin_user_index') }}">Cancelar</a></div>
+        {{ form_end(form) }}
+    </section>
+{% endblock %}

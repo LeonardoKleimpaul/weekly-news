@@ -1,0 +1,16 @@
+{% extends 'base.html.twig' %}
+{% block body %}
+    <section class="intro">
+        <p class="eyebrow">Área do grupo</p>
+        <h1>Olá, {{ app.user.name }}.</h1>
+        <p>Seu lugar na resenha está reservado.</p>
+    </section>
+    <section class="panel">
+        <h2>Bem-vindo ao Weekly News</h2>
+        <p>As contas do grupo já estão prontas. As edições de sexta-feira serão o próximo passo.</p>
+        <div class="actions">
+            {% if is_granted('ROLE_ADMIN') %}<a class="button" href="{{ path('admin_user_index') }}">Gerenciar participantes</a>{% endif %}
+            <a class="button button-secondary" href="{{ path('app_account') }}">Minha conta</a>
+        </div>
+    </section>
+{% endblock %}

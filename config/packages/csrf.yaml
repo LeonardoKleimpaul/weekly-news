@@ -1,0 +1,7 @@
+# Forms and authentication use session-backed CSRF tokens.
+framework:
+    form:
+        csrf_protection:
+            token_id: submit
+
+    csrf_protection: true

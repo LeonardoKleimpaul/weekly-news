@@ -1,0 +1,29 @@
+{% extends 'base.html.twig' %}
+{% import 'components/icons.html.twig' as icons %}
+{% block title %}Entrar · Weekly News{% endblock %}
+{% block body %}
+    <div class="login-grid">
+        <section class="intro">
+            <p class="eyebrow">A edição começa com vocês</p>
+            <h1>A semana passa.<br><span class="text-accent">A resenha fica.</span></h1>
+            <p>Um lugar para guardar as notícias, os memes e as histórias que fazem a nossa sexta.</p>
+            <span class="edition-stamp">Encontro marcado: sexta-feira</span>
+            <div class="hero-tags" aria-hidden="true"><span>Notícias</span><span>Memes</span><span>Histórias</span></div>
+        </section>
+        <section class="panel" aria-labelledby="login-title">
+            <div class="panel-icon">{{ icons.icon('chat') }}</div>
+            <p class="eyebrow">Área do grupo</p>
+            <h2 id="login-title">Entre na resenha</h2>
+            <p class="muted">Use o e-mail e a senha da sua conta.</p>
+            {% if app.request.query.get('password_changed') %}<div class="notice" role="status">Senha alterada. Entre novamente com a nova senha.</div>{% endif %}
+            {% if error %}<div class="error" role="alert">Não foi possível entrar. Confira seus dados e se sua conta está ativa. Após várias tentativas, aguarde alguns minutos.</div>{% endif %}
+            <form action="{{ path('app_login') }}" method="post">
+                <div class="field"><label for="email">E-mail</label><input id="email" name="email" type="email" value="{{ last_email }}" autocomplete="username" maxlength="180" required autofocus></div>
+                <div class="field"><label for="password">Senha</label><input id="password" name="password" type="password" autocomplete="current-password" required></div>
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                <button class="button" type="submit">Entrar {{ icons.icon('arrow') }}</button>
+            </form>
+            <p class="muted small">Ainda não tem acesso? Peça sua conta ao administrador do grupo.</p>
+        </section>
+    </div>
+{% endblock %}

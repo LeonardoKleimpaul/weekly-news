@@ -1,0 +1,15 @@
+{% extends 'base.html.twig' %}
+{% block title %}Usuários · Weekly News{% endblock %}
+{% block body %}
+    <div class="page-heading"><div><p class="eyebrow">Administração</p><h1>O pessoal da resenha</h1><p class="muted">Gerencie quem participa das nossas sextas.</p></div><a class="button" href="{{ path('admin_user_new') }}">Novo usuário</a></div>
+    <div class="panel table-wrapper">
+        <table>
+            <thead><tr><th scope="col">Nome</th><th scope="col">E-mail</th><th scope="col">Perfil</th><th scope="col">Status</th><th scope="col">Ação</th></tr></thead>
+            <tbody>
+            {% for user in users %}
+                <tr><td data-label="Nome">{{ user.name }}</td><td data-label="E-mail">{{ user.email }}</td><td data-label="Perfil">{{ user.admin ? 'Administrador' : 'Membro' }}</td><td data-label="Status"><span class="badge {{ user.active ? '' : 'badge-inactive' }}">{{ user.active ? 'Ativo' : 'Inativo' }}</span></td><td data-label="Ação"><a href="{{ path('admin_user_edit', {id: user.id}) }}" aria-label="Editar {{ user.name }}">Editar</a></td></tr>
+            {% else %}<tr class="empty-row"><td colspan="5">Nenhum usuário cadastrado.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

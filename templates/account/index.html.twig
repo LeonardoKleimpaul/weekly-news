@@ -1,0 +1,16 @@
+{% extends 'base.html.twig' %}
+{% block title %}Minha conta · Weekly News{% endblock %}
+{% block body %}
+    <section class="panel narrow">
+        <p class="eyebrow">Minha conta</p><h1>{{ app.user.name }}</h1><p class="muted">{{ app.user.email }}</p>
+        <hr><h2>Alterar senha</h2><p class="muted">Use pelo menos 12 caracteres. Depois da alteração, você precisará entrar novamente.</p>
+        {{ form_start(form) }}
+            {{ form_errors(form) }}
+            {{ form_row(form.currentPassword) }}
+            {{ form_errors(form.newPassword) }}
+            {{ form_row(form.newPassword.first) }}
+            {{ form_row(form.newPassword.second) }}
+            <button class="button" type="submit">Alterar senha</button>
+        {{ form_end(form) }}
+    </section>
+{% endblock %}
