@@ -5,9 +5,10 @@ if (sidebar && menuButton) {
     const mobile = window.matchMedia('(max-width: 860px)');
 
     const syncSidebar = () => {
-        if (sidebar.open) sidebar.close();
+        if (sidebar.matches(':modal')) sidebar.close();
         sidebar.setAttribute('role', mobile.matches ? 'dialog' : 'complementary');
-        if (!mobile.matches) sidebar.show();
+        // A desktop sidebar is static: show() would move focus to its first link.
+        sidebar.toggleAttribute('open', !mobile.matches);
         menuButton.setAttribute('aria-expanded', 'false');
         document.body.classList.remove('menu-open');
     };
@@ -19,6 +20,7 @@ if (sidebar && menuButton) {
     menuButton.addEventListener('click', () => {
         if (!mobile.matches || sidebar.open) return;
         sidebar.showModal();
+        sidebar.querySelector('[data-close-menu]').focus({ preventScroll: true });
         menuButton.setAttribute('aria-expanded', 'true');
         document.body.classList.add('menu-open');
     });

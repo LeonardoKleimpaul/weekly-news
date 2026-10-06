@@ -46,7 +46,7 @@ Cada participante pode alterar sua senha em **Minha conta**, informando a atual.
 - Login e logout por sessão.
 - Usuários persistidos no PostgreSQL, com e-mail único e senha armazenada por hash.
 - Perfis de membro e administrador, gestão de contas e troca de senha.
-- Telas responsivas em português, com fundo escuro e destaques em verde neon.
+- Telas responsivas em português, com modos claro e escuro, destaques em verde e troca de tema pelo ícone no topo. A preferência fica salva no navegador; o modo escuro é o padrão.
 - Menu lateral fixo no desktop e acessível por botão no celular, com fechamento por toque fora, botão ou tecla Esc.
 - Migration inicial e testes funcionais do fluxo de usuários.
 
