@@ -9,25 +9,25 @@
     <script src="{{ asset('scripts/theme.js') }}"></script>
     <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
     <script src="{{ asset('scripts/navigation.js') }}" defer></script>
+    {% block scripts %}{% endblock %}
 </head>
 <body class="{{ app.user ? 'authenticated' : 'guest' }}">
     <a class="skip-link" href="#main-content">Pular para o conteúdo</a>
     {% if app.user %}
         <dialog class="sidebar" id="site-sidebar" aria-labelledby="sidebar-title" open>
             <div class="sidebar-header">
-                <a class="brand" href="{{ path('app_home') }}"><span class="brand-mark">w.</span><span id="sidebar-title">weekly<span class="brand-accent">news</span><small>A resenha tem história.</small></span></a>
+                <a class="brand" href="{{ path('app_home') }}"><span class="brand-mark">w.</span><span id="sidebar-title">weekly<span class="brand-accent">news</span></span></a>
                 <button class="icon-button sidebar-close" type="button" data-close-menu aria-label="Fechar menu">{{ icons.icon('close') }}</button>
             </div>
             <p class="nav-label">O nosso espaço</p>
             <nav class="sidebar-nav" aria-label="Menu principal">
-                <a href="{{ path('app_home') }}" {% if current_route == 'app_home' %}aria-current="page"{% endif %}>{{ icons.icon('home') }}<span>Início</span></a>
+                <a href="{{ path('app_home') }}" {% if current_route starts with 'app_home' or current_route == 'app_submission' or 'presentation' in current_route %}aria-current="page"{% endif %}>{{ icons.icon('calendar') }}<span>Sextas</span></a>
                 {% if is_granted('ROLE_ADMIN') %}
                     <a href="{{ path('admin_user_index') }}" {% if current_route starts with 'admin_user_' %}aria-current="page"{% endif %}>{{ icons.icon('users') }}<span>Usuários</span></a>
                 {% endif %}
                 <a href="{{ path('app_account') }}" {% if current_route == 'app_account' %}aria-current="page"{% endif %}>{{ icons.icon('user') }}<span>Minha conta</span></a>
             </nav>
             <div class="sidebar-bottom">
-                <div class="sidebar-note"><span class="status-dot"></span>Uma sexta. Muitas histórias.</div>
                 <div class="member-card">
                     <span class="avatar" aria-hidden="true">{{ app.user.name|slice(0, 1)|upper }}</span>
                     <div class="member-info"><strong>{{ app.user.name }}</strong><small>{{ is_granted('ROLE_ADMIN') ? 'Administrador' : 'Membro do grupo' }}</small></div>
@@ -45,10 +45,9 @@
                 <button class="icon-button menu-toggle" type="button" aria-controls="site-sidebar" aria-expanded="false" aria-haspopup="dialog" aria-label="Abrir menu" data-open-menu>{{ icons.icon('menu') }}</button>
                 <span class="header-label">{{ current_route starts with 'admin_user_' ? 'Administração / Usuários' : (current_route == 'app_account' ? 'Minha conta' : 'O nosso espaço') }}</span>
             {% else %}
-                <a class="brand" href="{{ path('app_login') }}"><span class="brand-mark">w.</span><span>weekly<span class="brand-accent">news</span><small>A resenha tem história.</small></span></a>
+                <a class="brand" href="{{ path('app_login') }}"><span class="brand-mark">w.</span><span>weekly<span class="brand-accent">news</span></span></a>
             {% endif %}
             <div class="header-actions">
-                <span class="header-tag"><span class="status-dot"></span>{{ app.user ? 'Área do grupo' : 'O arquivo das nossas sextas' }}</span>
                 <button class="icon-button theme-toggle" type="button" data-toggle-theme aria-label="Ativar modo claro" title="Ativar modo claro" hidden>
                     <span class="theme-icon-light">{{ icons.icon('sun') }}</span>
                     <span class="theme-icon-dark">{{ icons.icon('moon') }}</span>
@@ -57,9 +56,10 @@
         </header>
     <main id="main-content" tabindex="-1">
         {% for message in app.flashes('success') %}<div class="notice" role="status">{{ message }}</div>{% endfor %}
+        {% for message in app.flashes('error') %}<div class="error" role="alert">{{ message }}</div>{% endfor %}
         {% block body %}{% endblock %}
     </main>
-    <footer>Weekly News · O arquivo das nossas sextas.</footer>
+    <footer>Weekly News · O arquivo das sextas.</footer>
     </div>
 </body>
 </html>

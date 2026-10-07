@@ -25,6 +25,7 @@ class UserFlowTest extends WebTestCase
         $this->client = static::createClient([], ['HTTPS' => 'on', 'HTTP_HOST' => 'localhost', 'REMOTE_ADDR' => '192.0.2.'.self::$clientNumber++]);
         $em = static::getContainer()->get(EntityManagerInterface::class);
         self::assertStringEndsWith('_test', $em->getConnection()->getDatabase(), 'Execute apenas no banco de testes.');
+        $em->createQuery('DELETE FROM App\Entity\Presentation p')->execute();
         $em->createQuery('DELETE FROM App\Entity\User u')->execute();
         $this->admin = $this->createUser('admin@example.com', 'Administrador', true);
         $this->member = $this->createUser('member@example.com', 'Participante');

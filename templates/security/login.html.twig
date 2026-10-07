@@ -4,16 +4,15 @@
 {% block body %}
     <div class="login-grid">
         <section class="intro">
-            <p class="eyebrow">A edição começa com vocês</p>
-            <h1>A semana passa.<br><span class="text-accent">A resenha fica.</span></h1>
-            <p>Um lugar para guardar as notícias, os memes e as histórias que fazem a nossa sexta.</p>
-            <span class="edition-stamp">Encontro marcado: sexta-feira</span>
+            <h1>A semana passa.<br><span class="text-accent">A weekly fica.</span></h1>
+            <p>Um lugar para guardar as notícias, os memes e as histórias absurdas.</p>
+            <span class="edition-stamp">Encontro: sexta-feira</span>
             <div class="hero-tags" aria-hidden="true"><span>Notícias</span><span>Memes</span><span>Histórias</span></div>
         </section>
         <section class="panel" aria-labelledby="login-title">
             <div class="panel-icon">{{ icons.icon('chat') }}</div>
             <p class="eyebrow">Área do grupo</p>
-            <h2 id="login-title">Entre na resenha</h2>
+            <h2 id="login-title">Entre</h2>
             <p class="muted">Use o e-mail e a senha da sua conta.</p>
             {% if app.request.query.get('password_changed') %}<div class="notice" role="status">Senha alterada. Entre novamente com a nova senha.</div>{% endif %}
             {% if error %}<div class="error" role="alert">Não foi possível entrar. Confira seus dados e se sua conta está ativa. Após várias tentativas, aguarde alguns minutos.</div>{% endif %}

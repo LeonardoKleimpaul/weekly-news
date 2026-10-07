@@ -1,16 +1,62 @@
 {% extends 'base.html.twig' %}
+{% import 'components/icons.html.twig' as icons %}
+{% block title %}Sextas · {{ year }} · Weekly News{% endblock %}
 {% block body %}
-    <section class="intro">
-        <p class="eyebrow">Área do grupo</p>
+    <section class="intro calendar-intro">
+        <p class="eyebrow">O arquivo das sextas</p>
         <h1>Olá, {{ app.user.name }}.</h1>
-        <p>Seu lugar na resenha está reservado.</p>
     </section>
-    <section class="panel">
-        <h2>Bem-vindo ao Weekly News</h2>
-        <p>As contas do grupo já estão prontas. As edições de sexta-feira serão o próximo passo.</p>
-        <div class="actions">
-            {% if is_granted('ROLE_ADMIN') %}<a class="button" href="{{ path('admin_user_index') }}">Gerenciar participantes</a>{% endif %}
-            <a class="button button-secondary" href="{{ path('app_account') }}">Minha conta</a>
+    {% if year == today|date('Y', false) %}
+        {% set upcoming_key = upcoming|date('Y-m-d', false) %}
+        {% set upcoming_presentation = presentations[upcoming_key] ?? null %}
+        <section class="panel upcoming-panel" aria-labelledby="upcoming-title">
+            <div class="upcoming-date" aria-hidden="true"><span>{{ month_names[upcoming|date('n', false)]|slice(0, 3) }}</span><strong>{{ upcoming|date('d', false) }}</strong></div>
+            <div class="upcoming-copy">
+                <p class="eyebrow">{{ upcoming_key == today|date('Y-m-d', false) ? 'É hoje!' : 'A próxima sexta' }}</p>
+                <h2 id="upcoming-title">{{ upcoming|date('d/m/Y', false) }}</h2>
+                <span class="submission-status {{ upcoming_submission or upcoming_presentation ? 'submission-status-saved' : 'submission-status-pending' }}"><span class="submission-dot" aria-hidden="true"></span><span>{{ upcoming_presentation ? (upcoming_presentation.finished ? 'Histórias apresentadas' : 'Apresentação em andamento') : (upcoming_submission ? 'Envio salvo' : 'Você ainda não enviou') }}</span></span>
+                <p class="muted">{{ upcoming_presentation ? 'Os envios estão encerrados. Entre na sala desta sexta.' : (upcoming_submission ? 'Sua história está salva. Ainda dá tempo de ajustar os detalhes.' : 'O que marcou a sua semana? A próxima sexta está esperando a sua história.') }}</p>
+            </div>
+            <a class="button" href="{{ path(upcoming_presentation ? 'app_presentation' : 'app_submission', {friday: upcoming_key}) }}">{{ icons.icon(upcoming_presentation ? 'play' : (upcoming_submission ? 'edit' : 'create')) }}{{ upcoming_presentation ? 'Abrir sala' : (upcoming_submission ? 'Editar meu envio' : 'Preparar meu envio') }}</a>
+        </section>
+    {% endif %}
+    <div class="calendar-summary" aria-label="Resumo do ano">
+        <div><strong>{{ friday_count }}</strong><span>sextas em {{ year }}</span></div>
+        <div><strong>{{ submissions|length }}</strong><span>com a sua história</span></div>
+        <p>{{ icons.icon('image') }}Foto + texto livre.<br><span class="muted">A resenha começa com vocês.</span></p>
+    </div>
+    <section aria-labelledby="calendar-title">
+        
+        <div class="months-grid">
+            {% set current_month = today|date('Y-m', false) %}
+            {% for month, fridays in months %}
+                <details class="panel month-panel" aria-labelledby="month-{{ month }}" {% if '%04d-%02d'|format(year, month) >= current_month %}open{% endif %}>
+                    <summary class="month-heading"><span class="month-name" id="month-{{ month }}">{{ month_names[month] }}</span><span class="small muted">{{ fridays|length }} sextas</span><span class="month-chevron" aria-hidden="true">{{ icons.icon('chevron_right') }}</span></summary>
+                    <div class="friday-list">
+                        {% for friday in fridays %}
+                            {% set key = friday|date('Y-m-d', false) %}
+                            {% set past = key < today|date('Y-m-d', false) %}
+                            {% set submitted = submissions[key] is defined %}
+                            {% set next = key == upcoming|date('Y-m-d', false) %}
+                            {% set presentation = presentations[key] ?? null %}
+                            <a class="friday-card{{ past ? ' friday-past' : '' }}{{ next ? ' friday-upcoming' : '' }}" href="{{ path(presentation ? 'app_presentation' : 'app_submission', {friday: key}) }}" data-friday="{{ key }}" aria-label="Sexta {{ friday|date('d/m/Y', false) }}: {{ presentation ? (presentation.finished ? 'histórias apresentadas' : 'apresentação em andamento') : (submitted ? 'envio salvo' : (past ? 'prazo encerrado' : 'envio pendente')) }}">
+                                <span class="friday-day">{{ friday|date('d', false) }}<small>SEX</small></span>
+                                <span class="friday-info"><strong>{{ next ? 'Nesta sexta' : 'Sexta-feira' }}</strong><span class="friday-status{{ submitted or presentation ? ' text-accent' : (next ? ' friday-status-pending' : '') }}">{% if presentation %}{{ icons.icon(presentation.finished ? 'check' : 'play') }}{{ presentation.finished ? 'Histórias apresentadas' : 'Apresentação em andamento' }}{% elseif submitted %}{{ icons.icon('check') }}Envio salvo{% elseif past %}Prazo encerrado{% else %}<span class="submission-dot" aria-hidden="true"></span>Envio pendente{% endif %}</span></span>
+                                <span class="friday-arrow" aria-hidden="true">{{ icons.icon('chevron_right') }}</span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </details>
+            {% endfor %}
+        </div>
+        <div class="calendar-heading">
+            <div></div>
+            <nav class="year-navigation" aria-label="Selecionar ano">
+                {% if year > min_year %}<a class="icon-button" href="{{ path('app_home_year', {year: year - 1}) }}" aria-label="Ver {{ year - 1 }}">{{ icons.icon('chevron_left') }}</a>{% endif %}
+                <span>{{ year }}</span>
+                {% if year < max_year %}<a class="icon-button" href="{{ path('app_home_year', {year: year + 1}) }}" aria-label="Ver {{ year + 1 }}">{{ icons.icon('chevron_right') }}</a>{% endif %}
+                {% if year != today|date('Y', false) %}<a class="back-link" href="{{ path('app_home') }}">Ano atual</a>{% endif %}
+            </nav>
         </div>
     </section>
 {% endblock %}

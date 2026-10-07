@@ -29,6 +29,8 @@ RUN <<-EOF
 		opcache \
 		zip
 	rm -rf /var/lib/apt/lists/*
+	mkdir -p var/uploads
+	chown www-data:www-data var/uploads
 EOF
 
 # https://getcomposer.org/doc/03-cli.md#composer-allow-superuser
@@ -87,7 +89,7 @@ RUN composer install --no-cache --prefer-dist --no-dev --no-autoloader --no-scri
 COPY --link --exclude=frankenphp/ . ./
 
 RUN <<-EOF
-	mkdir -p var/cache var/log var/share
+	mkdir -p var/cache var/log var/share var/uploads
 	composer dump-autoload --classmap-authoritative --no-dev
 	composer dump-env prod
 	composer run-script --no-dev post-install-cmd

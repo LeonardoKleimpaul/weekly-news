@@ -1,0 +1,52 @@
+{% extends 'base.html.twig' %}
+{% import 'components/icons.html.twig' as icons %}
+{% block title %}Sua história · {{ friday|date('d/m/Y', false) }} · Weekly News{% endblock %}
+{% block scripts %}<script src="{{ asset('scripts/submission.js') }}" defer></script>{% endblock %}
+{% block body %}
+    <a class="back-link" href="{{ path('app_home_year', {year: friday|date('Y', false)}) }}">← Nossas sextas de {{ friday|date('Y', false) }}</a>
+    <section class="intro submission-heading">
+        <p class="eyebrow">{{ is_open ? 'Sua contribuição' : 'Arquivo da sexta' }}</p>
+        <h1>Sexta, {{ friday|date('d', false) }} de {{ month_name|lower }}.</h1>
+        <p>{{ friday|date('Y', false) }} · {{ is_open ? 'O que vai entrar na resenha dessa vez?' : (presentation ? 'A apresentação começou e os envios estão encerrados.' : 'O prazo de envio desta data já terminou.') }}</p>
+    </section>
+    <section class="panel presentation-entry" aria-labelledby="presentation-entry-title">
+        <div><p class="eyebrow">{{ presentation ? (presentation.finished ? 'Histórias apresentadas' : 'A resenha começou') : 'Na hora da call' }}</p><h2 id="presentation-entry-title">{{ presentation ? 'A sala desta sexta está aqui.' : 'Todo mundo na mesma sala.' }}</h2><p class="small muted">{{ presentation ? 'Abra a sala para acompanhar a apresentação desta sexta.' : 'Veja quem já enviou e acompanhe o início da apresentação.' }}</p></div>
+        <a class="button button-secondary" href="{{ path('app_presentation', {friday: friday|date('Y-m-d', false)}) }}">{{ icons.icon('play') }}{{ is_granted('ROLE_ADMIN') and not presentation ? 'Preparar apresentação' : 'Abrir sala' }}</a>
+    </section>
+    {% if is_open %}
+        {% set saved = submission.id is not null %}
+        <div class="submission-grid">
+            <section class="panel submission-editor" aria-labelledby="editor-title">
+                <div class="submission-section-title"><span class="panel-icon">{{ icons.icon('image') }}</span><div><h2 id="editor-title">{{ saved ? 'Sua história está aqui' : 'Conte a sua história' }}</h2><p class="muted small">{{ saved ? 'Edite o texto ou escolha outra foto para atualizar o envio.' : 'Uma foto e um texto, do seu jeito.' }}</p></div></div>
+                {{ form_start(form) }}
+                    {{ form_errors(form) }}
+                    {{ form_row(form.photo) }}
+                    {{ form_row(form.text) }}
+                    <p class="privacy-note small muted">{{ icons.icon('user') }}O seu envio fica visível só para você nesta etapa.</p>
+                    <div class="actions"><button class="button" type="submit">{{ saved ? 'Salvar alterações' : 'Enviar contribuição' }}{{ icons.icon('arrow') }}</button><a href="{{ path('app_home_year', {year: friday|date('Y', false)}) }}">Voltar ao calendário</a></div>
+                {{ form_end(form) }}
+                {% if saved %}<p class="small muted saved-at">Último envio salvo em {{ submission.updatedAt|date('d/m/Y \à\s H:i') }}.</p>{% endif %}
+            </section>
+            <aside class="panel submission-preview" aria-labelledby="preview-title">
+                <p class="eyebrow" id="preview-title">Prévia da sua história</p>
+                <div class="preview-photo">
+                    <img data-preview-photo {% if saved %}src="{{ path('app_submission_photo', {id: submission.id}) }}"{% else %}hidden{% endif %} alt="Foto da sua contribuição">
+                    <div class="photo-placeholder" data-photo-placeholder {% if saved %}hidden{% endif %}>{{ icons.icon('image') }}<span>Sua foto aparece aqui</span></div>
+                </div>
+                <div class="preview-author"><span class="avatar" aria-hidden="true">{{ app.user.name|slice(0, 1)|upper }}</span><div><strong>{{ app.user.name }}</strong><small class="muted">Sexta, {{ friday|date('d/m/Y', false) }}</small></div></div>
+                <p class="story-text{{ submission.text ? '' : ' muted' }}" data-preview-text>{{ submission.text ?: 'O texto da sua história aparece aqui enquanto você escreve.' }}</p>
+                <p class="small muted preview-note">A prévia ainda não é um envio. Use o botão para salvar a sua contribuição.</p>
+            </aside>
+        </div>
+    {% elseif submission %}
+        <section class="panel archived-submission">
+            <p class="eyebrow">Sua história ficou guardada</p>
+            <div class="preview-author"><span class="avatar" aria-hidden="true">{{ app.user.name|slice(0, 1)|upper }}</span><strong>{{ app.user.name }}</strong></div>
+            <div class="preview-photo"><img src="{{ path('app_submission_photo', {id: submission.id}) }}" alt="Foto da sua contribuição"></div>
+            <p class="story-text">{{ submission.text }}</p>
+            <p class="small muted">Salvo em {{ submission.updatedAt|date('d/m/Y \à\s H:i') }}. Este envio não pode mais ser alterado.</p>
+        </section>
+    {% else %}
+        <section class="panel empty-submission"><span class="panel-icon">{{ icons.icon('calendar') }}</span><h2>Esta sexta ficou sem o seu envio.</h2><p class="muted">O prazo terminou, mas as próximas sextas estão esperando novas histórias.</p><a class="button" href="{{ path('app_home') }}">Ver as próximas sextas{{ icons.icon('arrow') }}</a></section>
+    {% endif %}
+{% endblock %}

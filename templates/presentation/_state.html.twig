@@ -1,0 +1,55 @@
+{% import 'components/icons.html.twig' as icons %}
+<section data-presentation-state data-revision="{{ revision }}" data-finished="{{ presentation and presentation.finished ? 'true' : 'false' }}" data-announcement="{{ presentation ? (presentation.finished ? 'Todas as histórias foram apresentadas.' : 'História ' ~ (presentation.position + 1) ~ ' de ' ~ presentation.submissionOrder|length) : 'Aguardando o início da apresentação.' }}">
+    {% if action_form %}{{ form_errors(action_form) }}{% endif %}
+    {% if presentation is null %}
+        <div class="presentation-lobby">
+            <section class="panel presentation-welcome" aria-labelledby="room-title">
+                <span class="panel-icon">{{ icons.icon('play') }}</span>
+                <p class="eyebrow">{{ can_start ? 'Tudo pronto' : 'Antes de começar' }}</p>
+                <h2 id="room-title">{{ can_start ? 'As histórias estão esperando.' : 'Estamos reunindo as histórias.' }}</h2>
+                <p class="muted">{{ is_granted('ROLE_ADMIN') ? 'Peça para o pessoal abrir esta sala durante a call no Meet. Quando você iniciar, todos verão a mesma história.' : 'Abra a call no Meet e mantenha esta sala aberta. A primeira história aparece quando o administrador iniciar.' }}</p>
+                <p class="small muted">O início sorteia a ordem e encerra as alterações nos envios desta sexta.</p>
+                {% if is_granted('ROLE_ADMIN') %}
+                    {{ form_start(action_form, {attr: {'data-presentation-action': ''}}) }}
+                        <button class="button" id="presentation-start" type="submit" {% if not can_start %}disabled aria-describedby="start-reason"{% endif %}>{{ icons.icon('play') }}Iniciar apresentação</button>
+                    {{ form_end(action_form) }}
+                    {% if not date_available %}<p class="small muted" id="start-reason">Você pode iniciar a partir de {{ friday|date('d/m/Y', false) }}.</p>
+                    {% elseif not readiness.ready %}<p class="small muted" id="start-reason">Aguardando os envios de todos os usuários ativos, incluindo administradores.</p>{% endif %}
+                {% else %}<span class="badge badge-inactive">Aguardando o administrador</span>{% endif %}
+                <a class="back-link" href="{{ path('app_submission', {friday: friday|date('Y-m-d', false)}) }}">Ver meu envio{{ icons.icon('arrow') }}</a>
+            </section>
+            <aside class="panel participant-panel" aria-labelledby="participants-title">
+                <div class="participant-heading"><h2 id="participants-title">Envios do grupo</h2><span class="badge{{ readiness.ready ? '' : ' badge-inactive' }}">{{ readiness.submission_ids|length }}/{{ readiness.participants|length }}</span></div>
+                <p class="small muted">As histórias ficam guardadas até a apresentação.</p>
+                <ul class="participant-list">
+                    {% for participant in readiness.participants %}
+                        <li><span class="avatar" aria-hidden="true">{{ participant.user.name|slice(0, 1)|upper }}</span><strong>{{ participant.user.name }}</strong><span class="participant-status{{ participant.submitted ? ' text-accent' : ' muted' }}">{% if participant.submitted %}{{ icons.icon('check') }}Enviado{% else %}<span class="submission-dot" aria-hidden="true"></span>Pendente{% endif %}</span></li>
+                    {% endfor %}
+                </ul>
+            </aside>
+        </div>
+    {% elseif presentation.finished %}
+        <section class="panel presentation-finished" aria-labelledby="room-title">
+            <span class="panel-icon">{{ icons.icon('check') }}</span>
+            <p class="eyebrow">Fim da apresentação</p>
+            <h2 id="room-title">Todas as histórias foram apresentadas.</h2>
+            <p class="muted">{{ presentation.submissionOrder|length }} histórias fizeram parte desta sexta. A resenha continua na call!</p>
+            <a class="button button-secondary" href="{{ path('app_home_year', {year: friday|date('Y', false)}) }}">Voltar às sextas{{ icons.icon('arrow') }}</a>
+        </section>
+    {% else %}
+        <div class="presentation-progress"><span class="submission-status"><span class="submission-dot" aria-hidden="true"></span>Apresentação em andamento</span><span class="small muted">História {{ presentation.position + 1 }} de {{ presentation.submissionOrder|length }}</span></div>
+        {% if current %}
+            <article class="panel presentation-story" aria-labelledby="story-author">
+                <div class="presentation-photo"><img src="{{ path('app_submission_photo', {id: current.id}) }}" alt="Foto enviada por {{ current.author.name }}"></div>
+                <div class="presentation-story-copy"><p class="eyebrow">A história da vez</p><div class="preview-author"><span class="avatar" aria-hidden="true">{{ current.author.name|slice(0, 1)|upper }}</span><h2 id="story-author">{{ current.author.name }}</h2></div><p class="story-text">{{ current.text }}</p></div>
+            </article>
+        {% else %}<p class="notice">Este envio não está mais disponível. O administrador pode continuar a apresentação.</p>{% endif %}
+        <div class="presentation-controls">
+            {% if is_granted('ROLE_ADMIN') %}
+                {{ form_start(action_form, {attr: {'data-presentation-action': ''}}) }}
+                    <button class="button" id="presentation-advance" type="submit">{{ icons.icon(presentation.position + 1 == presentation.submissionOrder|length ? 'check' : 'arrow') }}{{ presentation.position + 1 == presentation.submissionOrder|length ? 'Concluir apresentação' : 'Próxima história' }}</button>
+                {{ form_end(action_form) }}
+            {% endif %}
+        </div>
+    {% endif %}
+</section>
