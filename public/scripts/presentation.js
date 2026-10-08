@@ -20,7 +20,7 @@
     const poll = async () => {
         clearTimeout(timer);
         const state = room.querySelector('[data-presentation-state]');
-        if (busy || submitting || sessionEnded || document.hidden || state.dataset.finished === 'true') return;
+        if (busy || submitting || sessionEnded || document.hidden || state.dataset.closed === 'true') return;
         busy = true;
         try {
             const response = await fetch(room.dataset.stateUrl, {
@@ -38,7 +38,12 @@
             }
             if (!submitting && state.dataset.revision !== next.dataset.revision) {
                 const focusedId = document.activeElement?.id;
+                const selectedVote = state.querySelector('[data-vote-form] input[type="radio"]:checked')?.value;
                 state.replaceWith(next);
+                if (selectedVote && next.dataset.phase === state.dataset.phase) {
+                    const choice = Array.from(next.querySelectorAll('[data-vote-form] input[type="radio"]')).find(input => input.value === selectedVote);
+                    if (choice) choice.checked = true;
+                }
                 if (focusedId) document.getElementById(focusedId)?.focus({ preventScroll: true });
                 connection.textContent = next.dataset.announcement;
             } else {
@@ -48,7 +53,7 @@
             connection.textContent = 'Conexão interrompida. Tentando atualizar novamente…';
         } finally {
             busy = false;
-            if (!submitting && !sessionEnded && room.querySelector('[data-presentation-state]').dataset.finished !== 'true') {
+            if (!submitting && !sessionEnded && room.querySelector('[data-presentation-state]').dataset.closed !== 'true') {
                 timer = setTimeout(poll, 3000);
             }
         }

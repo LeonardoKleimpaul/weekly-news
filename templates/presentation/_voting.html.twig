@@ -1,0 +1,48 @@
+{% import 'components/icons.html.twig' as icons %}
+<section class="panel presentation-finished voting-panel" aria-labelledby="room-title">
+    {% if presentation.closed %}
+        {% set winners = presentation.result|filter(row => row.rank == 1) %}
+        <span class="panel-icon">{{ icons.icon('trophy') }}</span>
+        <p class="eyebrow">Resultado da sexta · {{ friday|date('d/m/Y', false) }}</p>
+        <h2 id="room-title">{{ winners|length > 1 ? 'Esta sexta teve empate!' : 'A história vencedora da semana!' }}</h2>
+        <div class="weekly-winners">{% for winner in winners %}<div><span class="avatar" aria-hidden="true">{{ winner.name|slice(0, 1)|upper }}</span><strong>{{ winner.name }}</strong><span>{{ winner.points }} {{ winner.points == 1 ? 'voto' : 'votos' }}</span></div>{% endfor %}</div>
+        <p class="small muted">Cada voto vale 1 ponto no ranking geral. Edição encerrada em {{ presentation.closedAt|date('d/m/Y \à\s H:i') }}.</p>
+        <ol class="score-list" aria-label="Resultado completo da edição">
+            {% for row in presentation.result %}<li><span class="score-position">{{ row.rank }}º</span><strong>{{ row.name }}</strong><span class="score-points">{{ row.points }} <small>{{ row.points == 1 ? 'ponto' : 'pontos' }}</small></span></li>{% endfor %}
+        </ol>
+        <a class="button" href="{{ path('app_ranking') }}">{{ icons.icon('trophy') }}Ver ranking geral</a>
+    {% elseif presentation.votingOpenedAt %}
+        <span class="panel-icon">{{ icons.icon('check') }}</span>
+        <p class="eyebrow">{{ voting.complete ? 'Todos votaram' : 'Votação da sexta' }}</p>
+        <h2 id="room-title">{{ voting.complete ? 'O resultado está pronto para ser revelado.' : (voting.voted ? 'Seu voto está confirmado.' : 'Qual história merece o seu voto?') }}</h2>
+        <p class="voting-progress small muted">{{ voting.cast }} de {{ voting.total }} votos confirmados.</p>
+        {% if voting.complete %}
+            <p class="muted">{{ is_granted('ROLE_ADMIN') ? 'Revele o resultado para o grupo e encerre esta edição.' : 'Aguarde o administrador revelar o resultado para todo o grupo.' }}</p>
+            {% if is_granted('ROLE_ADMIN') %}{{ form_start(action_form, {attr: {'data-presentation-action': ''}}) }}<button class="button" type="submit" id="voting-reveal">{{ icons.icon('trophy') }}Revelar resultado</button>{{ form_end(action_form) }}{% endif %}
+        {% elseif voting.voted %}
+            <p class="muted">Você já votou nesta edição. O voto é definitivo; agora é só aguardar o restante do grupo.</p>
+        {% elseif voting.eligible %}
+            {{ form_start(vote_form, {attr: {'data-presentation-action': '', 'data-vote-form': ''}}) }}
+                <fieldset class="vote-options"><legend>{{ vote_form.candidate.vars.label }}</legend>
+                    {{ form_errors(vote_form.candidate) }}
+                    {% for choice in vote_form.candidate %}<div class="vote-option">{{ form_widget(choice) }}{{ form_label(choice) }}</div>{% endfor %}
+                </fieldset>
+                <p class="small muted">Você pode votar uma única vez. O voto em si mesmo não é permitido.</p>
+                <button class="button" type="submit" id="vote-confirm">{{ icons.icon('check') }}Confirmar voto</button>
+            {{ form_end(vote_form) }}
+        {% else %}<p class="muted">Você pode acompanhar esta edição. A votação é reservada aos participantes que enviaram uma história para esta sexta.</p>{% endif %}
+    {% else %}
+        <span class="panel-icon">{{ icons.icon('check') }}</span>
+        <p class="eyebrow">Fim da apresentação</p>
+        <h2 id="room-title">Todas as histórias foram apresentadas.</h2>
+        <p class="muted">{{ is_granted('ROLE_ADMIN') ? 'Abra a votação para o grupo escolher a história favorita desta sexta.' : 'Aguarde o administrador abrir a votação.' }}</p>
+        {% if is_granted('ROLE_ADMIN') %}
+            {{ form_start(action_form, {attr: {'data-presentation-action': ''}}) }}<button class="button" type="submit" id="voting-open" {% if presentation.submissionOrder|length < 2 %}disabled{% endif %}>{{ icons.icon('check') }}Abrir votação</button>{{ form_end(action_form) }}
+            {% if presentation.submissionOrder|length < 2 %}<p class="small muted">A votação precisa de pelo menos dois participantes.</p>{% endif %}
+        {% endif %}
+    {% endif %}
+    <div class="actions voting-links">
+        <a class="button button-secondary" href="{{ path('app_presentation_review', {friday: friday|date('Y-m-d', false)}) }}">{{ icons.icon('play') }}Rever apresentação</a>
+        <a href="{{ path('app_home_year', {year: friday|date('Y', false)}) }}">Voltar às sextas</a>
+    </div>
+</section>

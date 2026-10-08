@@ -17,15 +17,17 @@
         <dialog class="sidebar" id="site-sidebar" aria-labelledby="sidebar-title" open>
             <div class="sidebar-header">
                 <a class="brand" href="{{ path('app_home') }}"><span class="brand-mark">w.</span><span id="sidebar-title">weekly<span class="brand-accent">news</span></span></a>
+                <button class="icon-button sidebar-toggle" type="button" data-collapse-menu aria-controls="site-sidebar" aria-expanded="true" aria-label="Recolher menu" title="Recolher menu">{{ icons.icon('chevron_left') }}</button>
                 <button class="icon-button sidebar-close" type="button" data-close-menu aria-label="Fechar menu">{{ icons.icon('close') }}</button>
             </div>
             <p class="nav-label">O nosso espaço</p>
             <nav class="sidebar-nav" aria-label="Menu principal">
-                <a href="{{ path('app_home') }}" {% if current_route starts with 'app_home' or current_route == 'app_submission' or 'presentation' in current_route %}aria-current="page"{% endif %}>{{ icons.icon('calendar') }}<span>Sextas</span></a>
+                <a href="{{ path('app_home') }}" aria-label="Sextas" title="Sextas" {% if current_route starts with 'app_home' or current_route == 'app_submission' or 'presentation' in current_route %}aria-current="page"{% endif %}>{{ icons.icon('calendar') }}<span>Sextas</span></a>
+                <a href="{{ path('app_ranking') }}" aria-label="Ranking geral" title="Ranking geral" {% if current_route == 'app_ranking' %}aria-current="page"{% endif %}>{{ icons.icon('trophy') }}<span>Ranking geral</span></a>
                 {% if is_granted('ROLE_ADMIN') %}
-                    <a href="{{ path('admin_user_index') }}" {% if current_route starts with 'admin_user_' %}aria-current="page"{% endif %}>{{ icons.icon('users') }}<span>Usuários</span></a>
+                    <a href="{{ path('admin_user_index') }}" aria-label="Usuários" title="Usuários" {% if current_route starts with 'admin_user_' %}aria-current="page"{% endif %}>{{ icons.icon('users') }}<span>Usuários</span></a>
                 {% endif %}
-                <a href="{{ path('app_account') }}" {% if current_route == 'app_account' %}aria-current="page"{% endif %}>{{ icons.icon('user') }}<span>Minha conta</span></a>
+                <a href="{{ path('app_account') }}" aria-label="Minha conta" title="Minha conta" {% if current_route == 'app_account' %}aria-current="page"{% endif %}>{{ icons.icon('user') }}<span>Minha conta</span></a>
             </nav>
             <div class="sidebar-bottom">
                 <div class="member-card">

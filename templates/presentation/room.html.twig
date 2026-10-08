@@ -7,6 +7,6 @@
     <div data-presentation-room data-state-url="{{ path('app_presentation_state', {friday: friday|date('Y-m-d', false)}) }}">
         {% include 'presentation/_state.html.twig' %}
     </div>
-    <p class="small muted room-connection" role="status" aria-live="polite" data-room-connection>{{ presentation and presentation.finished ? 'Apresentação concluída.' : 'Atualização automática ativa.' }}</p>
+    <p class="small muted room-connection" role="status" aria-live="polite" data-room-connection>{{ presentation and presentation.closed ? 'Edição encerrada.' : 'Atualização automática ativa.' }}</p>
     <noscript><p class="notice">Atualize a página para acompanhar o início e a próxima história.</p></noscript>
 {% endblock %}

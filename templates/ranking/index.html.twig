@@ -1,0 +1,16 @@
+{% extends 'base.html.twig' %}
+{% import 'components/icons.html.twig' as icons %}
+{% block title %}Ranking geral · Weekly News{% endblock %}
+{% block body %}
+    <section class="intro ranking-heading"><p class="eyebrow">O placar da resenha</p><h1>Ranking geral.</h1><p>Cada voto recebido vale 1 ponto. Quem tem a mesma pontuação divide a posição.</p></section>
+    <section class="panel ranking-panel" aria-label="Classificação geral">
+        <div class="participant-heading"><h2>As histórias somam.</h2><span class="panel-icon">{{ icons.icon('trophy') }}</span></div>
+        <p class="small muted">Os pontos entram após a revelação do resultado de cada edição.</p>
+        {% if standings %}
+            <ol class="score-list ranking-list">
+                {% for row in standings %}<li data-ranking-user="{{ row.user_id }}" data-points="{{ row.points }}"{% if row.user_id == app.user.id %} class="ranking-current"{% endif %}><span class="score-position">{{ row.rank }}º</span><span class="avatar" aria-hidden="true">{{ row.name|slice(0, 1)|upper }}</span><strong>{{ row.name }}{% if row.user_id == app.user.id %}<small class="muted">Você</small>{% endif %}</strong><span class="score-points">{{ row.points }} <small>{{ row.points == 1 ? 'ponto' : 'pontos' }}</small></span></li>{% endfor %}
+            </ol>
+        {% else %}<p class="muted">As primeiras histórias vão abrir este placar.</p>{% endif %}
+        {% if standings|filter(row => row.points > 0)|length == 0 %}<p class="notice">O ranking começa a pontuar quando a primeira edição for revelada.</p>{% endif %}
+    </section>
+{% endblock %}

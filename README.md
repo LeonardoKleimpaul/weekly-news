@@ -47,11 +47,14 @@ Cada participante pode alterar sua senha em **Minha conta**, informando a atual.
 - Usuários persistidos no PostgreSQL, com e-mail único e senha armazenada por hash.
 - Perfis de membro e administrador, gestão de contas e troca de senha.
 - Telas responsivas em português, com modos claro e escuro, destaques em verde e troca de tema pelo ícone no topo. A preferência fica salva no navegador; o modo escuro é o padrão.
-- Menu lateral fixo no desktop e acessível por botão no celular, com fechamento por toque fora, botão ou tecla Esc.
+- Menu lateral recolhível pelo botão dentro da sidebar no desktop, mantendo os ícones de navegação e saída acessíveis, com preferência salva no navegador. No celular, abre pelo botão no topo e fecha por toque fora, botão ou tecla Esc.
 - Calendário com todas as sextas do ano, agrupadas por mês, navegação entre anos e destaque para a próxima sexta.
 - Envio de uma foto e um texto por pessoa e sexta, com prévia, edição e indicação de envio salvo no calendário.
 - Sala de apresentação com status dos envios, início pelo administrador, ordem sorteada e passagem sincronizada das histórias.
-- Migrations e testes funcionais dos fluxos de usuários, contribuições e apresentações.
+- Votação com voto único, bloqueio de voto próprio, revelação pelo administrador e resultado preservado por edição.
+- Ranking geral com 1 ponto por voto recebido e posições compartilhadas em caso de empate.
+- Transição suave entre histórias, respeitando a preferência de movimento reduzido.
+- Migrations e testes funcionais dos fluxos de usuários, contribuições, apresentações e votação.
 
 ## Contribuições de sexta
 
@@ -71,14 +74,21 @@ O administrador pode clicar em **Iniciar apresentação** quando todos os usuár
 
 A ordem é sorteada uma única vez e salva no PostgreSQL. Todos acompanham o mesmo nome, foto e texto; somente administradores podem clicar em **Próxima história** e **Concluir apresentação**. Atualizar a página mantém a posição. A sala consulta atualizações a cada três segundos e avisa quando perde a conexão. Sem JavaScript, é possível acompanhar atualizando a página manualmente.
 
+Depois de concluir, qualquer membro pode clicar em **Rever apresentação** na sala daquela sexta. Use **História anterior**, **Próxima história** e **Rever do início** para navegar na ordem original. Cada pessoa revê no próprio ritmo; essa navegação preserva o estado encerrado da apresentação e os envios continuam bloqueados para edição.
+
 O início bloqueia novas alterações nos envios, inclusive formulários abertos antes de começar. Symfony Lock coordena o início, a edição e o avanço; cliques repetidos não pulam histórias. O `LOCK_DSN=flock` padrão atende ao container PHP único atual; múltiplas instâncias devem compartilhar um backend de locks. Não há integração com a API do Meet: a call é aberta por vocês.
 
-## Fluxo previsto para as próximas etapas
+## Votação, resultado e ranking
 
-1. O administrador abre a votação. Depois que todos votarem, o resultado fica pronto para ser revelado.
-2. A edição é encerrada e preserva contribuições, votos e resultado; os vencedores acumulam pontos no ranking geral.
+Ao concluir a apresentação, o administrador clica em **Abrir votação**. Cada participante escolhe um nome na lista e clica em **Confirmar voto**. O voto é definitivo, limitado a um por pessoa e edição, com proteção também no banco. O voto em si mesmo é bloqueado; a votação precisa de pelo menos dois participantes.
 
-Ainda precisamos definir o valor dos pontos, o desempate e a regra de voto próprio.
+A lista é formada pelos autores das histórias apresentadas e fica preservada na abertura. Contas criadas depois podem acompanhar, mas não participam dessa votação. Todos dessa lista precisam votar; se uma conta for desativada antes de votar, o administrador deve reativá-la para concluir a edição.
+
+Depois de todos votarem, o administrador pode **Revelar resultado**. A mesma sala mostra o vencedor ou todos os vencedores empatados, a pontuação de cada participante e a data de encerramento. Até a revelação, as quantidades de votos por candidato ficam ocultas, inclusive no ranking.
+
+Cada voto recebido vale **1 ponto**, para todos os participantes que receberam votos. O **Ranking geral**, disponível no menu lateral, soma apenas edições reveladas; revelar novamente não duplica pontos. Empatados compartilham a posição (por exemplo: 1º, 1º, 3º). Contas desativadas que já pontuaram continuam no histórico do ranking.
+
+Contribuições, votos e resultado ficam salvos. A edição encerrada permite consultar o resultado e rever as histórias na ordem original. A sala acompanha a votação e a revelação automaticamente e só para de buscar atualizações após o encerramento.
 
 ## Testes
 

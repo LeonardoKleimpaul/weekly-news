@@ -1,0 +1,23 @@
+{% extends 'base.html.twig' %}
+{% import 'components/icons.html.twig' as icons %}
+{% block title %}Rever apresentação · {{ friday|date('d/m/Y', false) }} · Weekly News{% endblock %}
+{% block body %}
+    <a class="back-link" href="{{ path('app_presentation', {friday: friday|date('Y-m-d', false)}) }}">← Voltar à sala</a>
+    <section class="intro submission-heading">
+        <p class="eyebrow">Rever apresentação</p>
+        <h1>Sexta, {{ friday|date('d/m/Y', false) }}.</h1>
+        <p>Revisite as histórias no seu ritmo.</p>
+    </section>
+    <div class="presentation-progress"><span class="submission-status">Apresentação encerrada</span><span class="small muted">História {{ position }} de {{ total }}</span></div>
+    {% if current %}
+        {% include 'presentation/_story.html.twig' %}
+    {% else %}<p class="notice">Este envio não está mais disponível. Você pode continuar revendo as outras histórias.</p>{% endif %}
+    <nav class="review-navigation" aria-label="Navegar pelas histórias">
+        {% if position > 1 %}
+            <a class="button button-secondary" rel="prev" href="{{ path('app_presentation_review', {friday: friday|date('Y-m-d', false), position: position - 1}) }}">{{ icons.icon('chevron_left') }}História anterior</a>
+        {% else %}<span class="button button-secondary" aria-disabled="true">{{ icons.icon('chevron_left') }}História anterior</span>{% endif %}
+        {% if position < total %}
+            <a class="button" rel="next" href="{{ path('app_presentation_review', {friday: friday|date('Y-m-d', false), position: position + 1}) }}">Próxima história{{ icons.icon('chevron_right') }}</a>
+        {% else %}<a class="button" href="{{ path('app_presentation_review', {friday: friday|date('Y-m-d', false)}) }}">{{ icons.icon('play') }}Rever do início</a>{% endif %}
+    </nav>
+{% endblock %}

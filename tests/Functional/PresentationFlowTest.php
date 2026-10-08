@@ -267,6 +267,121 @@ class PresentationFlowTest extends WebTestCase
         self::assertSelectorTextContains('.upcoming-panel', 'Preparar meu envio');
     }
 
+    public function testReviewRequiresLoginAndACompletedPresentation(): void
+    {
+        $this->client->restart();
+        $this->client->request('GET', self::ROOM.'/rever');
+        self::assertResponseRedirects('https://localhost/login');
+        $this->client->loginUser($this->admin);
+        $this->client->request('GET', self::ROOM.'/rever');
+        self::assertResponseStatusCodeSame(404);
+        $this->ready();
+        $this->start();
+        $this->client->request('GET', self::ROOM);
+        self::assertSelectorNotExists('a[href="'.self::ROOM.'/rever"]');
+        $this->client->request('GET', self::ROOM.'/rever/2');
+        self::assertResponseStatusCodeSame(404);
+        self::assertSelectorNotExists('.presentation-story');
+        $this->advance();
+        $this->client->request('GET', self::ROOM.'/rever');
+        self::assertResponseStatusCodeSame(404); // The last story still needs to be concluded.
+        $this->advance();
+        $this->client->request('GET', self::ROOM);
+        self::assertSelectorTextContains('.presentation-finished a[href="'.self::ROOM.'/rever"]', 'Rever apresentação');
+        $this->client->loginUser($this->member);
+        $this->client->request('GET', self::ROOM.'/estado');
+        self::assertSelectorExists('a[href="'.self::ROOM.'/rever"]');
+    }
+
+    public function testMembersCanReviewTheOriginalOrderWithoutChangingTheSharedState(): void
+    {
+        $order = $this->complete();
+        $this->client->loginUser($this->member);
+        $crawler = $this->client->request('GET', self::ROOM);
+        $crawler = $this->client->click($crawler->selectLink('Rever apresentação')->link());
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.presentation-progress', 'História 1 de 2');
+        self::assertSelectorExists('.presentation-photo img[src="/envios/'.$order[0].'/foto"]');
+        self::assertSelectorExists('.review-navigation [aria-disabled="true"]');
+        self::assertSelectorNotExists('.review-navigation a[rel="prev"]');
+        self::assertSelectorTextContains('.story-text', "<script>alert('teste')</script>");
+        self::assertSelectorNotExists('.presentation-story script');
+        self::assertSelectorNotExists('[data-presentation-room]');
+        self::assertSelectorNotExists('script[src="/scripts/presentation.js"]');
+        self::assertSelectorNotExists('#presentation-advance');
+        self::assertTrue($this->client->getResponse()->headers->hasCacheControlDirective('no-store'));
+        $crawler = $this->client->click($crawler->selectLink('Próxima história')->link());
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.presentation-progress', 'História 2 de 2');
+        self::assertSelectorExists('.presentation-photo img[src="/envios/'.$order[1].'/foto"]');
+        self::assertSelectorNotExists('.review-navigation a[rel="next"]');
+        $crawler = $this->client->click($crawler->selectLink('História anterior')->link());
+        self::assertSelectorExists('.presentation-photo img[src="/envios/'.$order[0].'/foto"]');
+        $crawler = $this->client->click($crawler->selectLink('Próxima história')->link());
+        $this->client->click($crawler->selectLink('Rever do início')->link());
+        self::assertSelectorTextContains('.presentation-progress', 'História 1 de 2');
+        $this->client->request('GET', '/envios/'.$order[1].'/foto');
+        self::assertResponseIsSuccessful();
+
+        $this->client->loginUser($this->admin);
+        $this->client->request('GET', self::ROOM.'/rever/2');
+        self::assertSelectorTextContains('.presentation-progress', 'História 2 de 2');
+        $this->client->loginUser($this->member);
+        $this->client->request('GET', self::ROOM.'/rever');
+        self::assertSelectorTextContains('.presentation-progress', 'História 1 de 2');
+        self::assertTrue($this->presentation()->isFinished());
+        self::assertSame(2, $this->presentation()->getPosition());
+        self::assertSame($order, $this->presentation()->getSubmissionOrder());
+        $this->client->request('GET', self::ROOM.'/estado');
+        self::assertSelectorExists('[data-finished="true"]');
+        $this->client->request('GET', '/sextas/'.self::FRIDAY);
+        self::assertSelectorNotExists('textarea');
+    }
+
+    public function testReviewRejectsInvalidPositionsDatesAndWriteRequests(): void
+    {
+        $this->complete();
+        foreach (['0', '-1', '3', '999999999', '999999999999999999999999', 'abc'] as $position) {
+            $this->client->request('GET', self::ROOM.'/rever/'.$position);
+            self::assertResponseStatusCodeSame(404);
+        }
+        foreach (['2026-10-08', '2026-02-30', '1999-01-01', '2026-10-16'] as $date) {
+            $this->client->request('GET', '/sextas/'.$date.'/apresentacao/rever');
+            self::assertResponseStatusCodeSame(404);
+        }
+        $this->client->request('POST', self::ROOM.'/rever');
+        self::assertResponseStatusCodeSame(405);
+        self::assertSame(2, $this->presentation()->getPosition());
+    }
+
+    public function testReviewStillAllowsNavigationWhenAnOriginalSubmissionIsMissing(): void
+    {
+        $order = $this->complete();
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $em->remove($em->find(Submission::class, $order[0]));
+        $em->flush();
+        $crawler = $this->client->request('GET', self::ROOM.'/rever');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.notice', 'Este envio não está mais disponível');
+        self::assertSelectorNotExists('.presentation-story');
+        $this->client->click($crawler->selectLink('Próxima história')->link());
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('.presentation-photo img[src="/envios/'.$order[1].'/foto"]');
+        self::assertSame($order, $this->presentation()->getSubmissionOrder());
+    }
+
+    private function complete(): array
+    {
+        $this->ready();
+        $this->start();
+        $order = $this->presentation()->getSubmissionOrder();
+        foreach ($order as $id) {
+            $this->advance();
+        }
+
+        return $order;
+    }
+
     private function createUser(string $email, string $name, bool $admin = false, bool $active = true): User
     {
         $user = new User();

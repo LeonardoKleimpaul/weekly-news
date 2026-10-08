@@ -1,6 +1,9 @@
 {% import 'components/icons.html.twig' as icons %}
-<section data-presentation-state data-revision="{{ revision }}" data-finished="{{ presentation and presentation.finished ? 'true' : 'false' }}" data-announcement="{{ presentation ? (presentation.finished ? 'Todas as histórias foram apresentadas.' : 'História ' ~ (presentation.position + 1) ~ ' de ' ~ presentation.submissionOrder|length) : 'Aguardando o início da apresentação.' }}">
+{% set phase = presentation is null ? 'lobby' : (not presentation.finished ? 'presenting' : (presentation.closed ? 'result' : (presentation.votingOpenedAt ? (voting.complete ? 'result-ready' : 'voting') : 'voting-ready'))) %}
+{% set announcement = phase == 'result' ? 'O resultado foi revelado. Edição encerrada!' : (phase == 'result-ready' ? 'Todos votaram. Aguardando a revelação.' : (phase == 'voting' ? 'Votação aberta. ' ~ voting.cast ~ ' de ' ~ voting.total ~ ' votos confirmados.' : (phase == 'voting-ready' ? 'Todas as histórias foram apresentadas.' : (phase == 'presenting' ? 'História ' ~ (presentation.position + 1) ~ ' de ' ~ presentation.submissionOrder|length : 'Aguardando o início da apresentação.')))) %}
+<section data-presentation-state data-revision="{{ revision }}" data-finished="{{ presentation and presentation.finished ? 'true' : 'false' }}" data-closed="{{ presentation and presentation.closed ? 'true' : 'false' }}" data-phase="{{ phase }}" data-announcement="{{ announcement }}">
     {% if action_form %}{{ form_errors(action_form) }}{% endif %}
+    {% if vote_form %}{{ form_errors(vote_form) }}{% endif %}
     {% if presentation is null %}
         <div class="presentation-lobby">
             <section class="panel presentation-welcome" aria-labelledby="room-title">
@@ -29,20 +32,11 @@
             </aside>
         </div>
     {% elseif presentation.finished %}
-        <section class="panel presentation-finished" aria-labelledby="room-title">
-            <span class="panel-icon">{{ icons.icon('check') }}</span>
-            <p class="eyebrow">Fim da apresentação</p>
-            <h2 id="room-title">Todas as histórias foram apresentadas.</h2>
-            <p class="muted">{{ presentation.submissionOrder|length }} histórias fizeram parte desta sexta. A resenha continua na call!</p>
-            <a class="button button-secondary" href="{{ path('app_home_year', {year: friday|date('Y', false)}) }}">Voltar às sextas{{ icons.icon('arrow') }}</a>
-        </section>
+        {% include 'presentation/_voting.html.twig' %}
     {% else %}
         <div class="presentation-progress"><span class="submission-status"><span class="submission-dot" aria-hidden="true"></span>Apresentação em andamento</span><span class="small muted">História {{ presentation.position + 1 }} de {{ presentation.submissionOrder|length }}</span></div>
         {% if current %}
-            <article class="panel presentation-story" aria-labelledby="story-author">
-                <div class="presentation-photo"><img src="{{ path('app_submission_photo', {id: current.id}) }}" alt="Foto enviada por {{ current.author.name }}"></div>
-                <div class="presentation-story-copy"><p class="eyebrow">A história da vez</p><div class="preview-author"><span class="avatar" aria-hidden="true">{{ current.author.name|slice(0, 1)|upper }}</span><h2 id="story-author">{{ current.author.name }}</h2></div><p class="story-text">{{ current.text }}</p></div>
-            </article>
+            {% include 'presentation/_story.html.twig' %}
         {% else %}<p class="notice">Este envio não está mais disponível. O administrador pode continuar a apresentação.</p>{% endif %}
         <div class="presentation-controls">
             {% if is_granted('ROLE_ADMIN') %}

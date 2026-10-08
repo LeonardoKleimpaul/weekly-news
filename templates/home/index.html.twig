@@ -9,12 +9,13 @@
     {% if year == today|date('Y', false) %}
         {% set upcoming_key = upcoming|date('Y-m-d', false) %}
         {% set upcoming_presentation = presentations[upcoming_key] ?? null %}
+        {% set upcoming_status = upcoming_presentation ? (upcoming_presentation.closed ? 'Edição encerrada' : (upcoming_presentation.votingOpenedAt ? 'Votação aberta' : (upcoming_presentation.finished ? 'Histórias apresentadas' : 'Apresentação em andamento'))) : null %}
         <section class="panel upcoming-panel" aria-labelledby="upcoming-title">
             <div class="upcoming-date" aria-hidden="true"><span>{{ month_names[upcoming|date('n', false)]|slice(0, 3) }}</span><strong>{{ upcoming|date('d', false) }}</strong></div>
             <div class="upcoming-copy">
                 <p class="eyebrow">{{ upcoming_key == today|date('Y-m-d', false) ? 'É hoje!' : 'A próxima sexta' }}</p>
                 <h2 id="upcoming-title">{{ upcoming|date('d/m/Y', false) }}</h2>
-                <span class="submission-status {{ upcoming_submission or upcoming_presentation ? 'submission-status-saved' : 'submission-status-pending' }}"><span class="submission-dot" aria-hidden="true"></span><span>{{ upcoming_presentation ? (upcoming_presentation.finished ? 'Histórias apresentadas' : 'Apresentação em andamento') : (upcoming_submission ? 'Envio salvo' : 'Você ainda não enviou') }}</span></span>
+                <span class="submission-status {{ upcoming_submission or upcoming_presentation ? 'submission-status-saved' : 'submission-status-pending' }}"><span class="submission-dot" aria-hidden="true"></span><span>{{ upcoming_status ?? (upcoming_submission ? 'Envio salvo' : 'Você ainda não enviou') }}</span></span>
                 <p class="muted">{{ upcoming_presentation ? 'Os envios estão encerrados. Entre na sala desta sexta.' : (upcoming_submission ? 'Sua história está salva. Ainda dá tempo de ajustar os detalhes.' : 'O que marcou a sua semana? A próxima sexta está esperando a sua história.') }}</p>
             </div>
             <a class="button" href="{{ path(upcoming_presentation ? 'app_presentation' : 'app_submission', {friday: upcoming_key}) }}">{{ icons.icon(upcoming_presentation ? 'play' : (upcoming_submission ? 'edit' : 'create')) }}{{ upcoming_presentation ? 'Abrir sala' : (upcoming_submission ? 'Editar meu envio' : 'Preparar meu envio') }}</a>
@@ -39,9 +40,10 @@
                             {% set submitted = submissions[key] is defined %}
                             {% set next = key == upcoming|date('Y-m-d', false) %}
                             {% set presentation = presentations[key] ?? null %}
-                            <a class="friday-card{{ past ? ' friday-past' : '' }}{{ next ? ' friday-upcoming' : '' }}" href="{{ path(presentation ? 'app_presentation' : 'app_submission', {friday: key}) }}" data-friday="{{ key }}" aria-label="Sexta {{ friday|date('d/m/Y', false) }}: {{ presentation ? (presentation.finished ? 'histórias apresentadas' : 'apresentação em andamento') : (submitted ? 'envio salvo' : (past ? 'prazo encerrado' : 'envio pendente')) }}">
+                            {% set presentation_status = presentation ? (presentation.closed ? 'Edição encerrada' : (presentation.votingOpenedAt ? 'Votação aberta' : (presentation.finished ? 'Histórias apresentadas' : 'Apresentação em andamento'))) : null %}
+                            <a class="friday-card{{ past ? ' friday-past' : '' }}{{ next ? ' friday-upcoming' : '' }}" href="{{ path(presentation ? 'app_presentation' : 'app_submission', {friday: key}) }}" data-friday="{{ key }}" aria-label="Sexta {{ friday|date('d/m/Y', false) }}: {{ presentation_status ? presentation_status|lower : (submitted ? 'envio salvo' : (past ? 'prazo encerrado' : 'envio pendente')) }}">
                                 <span class="friday-day">{{ friday|date('d', false) }}<small>SEX</small></span>
-                                <span class="friday-info"><strong>{{ next ? 'Nesta sexta' : 'Sexta-feira' }}</strong><span class="friday-status{{ submitted or presentation ? ' text-accent' : (next ? ' friday-status-pending' : '') }}">{% if presentation %}{{ icons.icon(presentation.finished ? 'check' : 'play') }}{{ presentation.finished ? 'Histórias apresentadas' : 'Apresentação em andamento' }}{% elseif submitted %}{{ icons.icon('check') }}Envio salvo{% elseif past %}Prazo encerrado{% else %}<span class="submission-dot" aria-hidden="true"></span>Envio pendente{% endif %}</span></span>
+                                <span class="friday-info"><strong>{{ next ? 'Nesta sexta' : 'Sexta-feira' }}</strong><span class="friday-status{{ submitted or presentation ? ' text-accent' : (next ? ' friday-status-pending' : '') }}">{% if presentation %}{{ icons.icon(presentation.finished ? 'check' : 'play') }}{{ presentation_status }}{% elseif submitted %}{{ icons.icon('check') }}Envio salvo{% elseif past %}Prazo encerrado{% else %}<span class="submission-dot" aria-hidden="true"></span>Envio pendente{% endif %}</span></span>
                                 <span class="friday-arrow" aria-hidden="true">{{ icons.icon('chevron_right') }}</span>
                             </a>
                         {% endfor %}

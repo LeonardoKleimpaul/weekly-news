@@ -1,0 +1,4 @@
+<article class="panel presentation-story" aria-labelledby="story-author">
+    <div class="presentation-photo"><img src="{{ path('app_submission_photo', {id: current.id}) }}" alt="Foto enviada por {{ current.author.name }}"></div>
+    <div class="presentation-story-copy"><p class="eyebrow">A história da vez</p><div class="preview-author"><span class="avatar" aria-hidden="true">{{ current.author.name|slice(0, 1)|upper }}</span><h2 id="story-author">{{ current.author.name }}</h2></div><p class="story-text">{{ current.text }}</p></div>
+</article>

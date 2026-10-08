@@ -18,6 +18,20 @@ class Presentation
     #[ORM\Column]
     private int $position = 0;
 
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $votingOpenedAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $closedAt = null;
+
+    /** @var list<array{user_id: int, name: string}>|null */
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $ballot = null;
+
+    /** @var list<array{user_id: int, name: string, points: int, rank: int}>|null */
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $result = null;
+
     /** @param list<int> $submissionOrder */
     public function __construct(
         #[ORM\Column(type: Types::DATE_IMMUTABLE)]
@@ -84,5 +98,46 @@ class Presentation
         if (!$this->isFinished()) {
             ++$this->position;
         }
+    }
+
+    public function getVotingOpenedAt(): ?\DateTimeImmutable
+    {
+        return $this->votingOpenedAt;
+    }
+
+    public function getClosedAt(): ?\DateTimeImmutable
+    {
+        return $this->closedAt;
+    }
+
+    public function isClosed(): bool
+    {
+        return null !== $this->closedAt;
+    }
+
+    /** @return list<array{user_id: int, name: string}> */
+    public function getBallot(): array
+    {
+        return $this->ballot ?? [];
+    }
+
+    /** @return list<array{user_id: int, name: string, points: int, rank: int}> */
+    public function getResult(): array
+    {
+        return $this->result ?? [];
+    }
+
+    /** @param list<array{user_id: int, name: string}> $ballot */
+    public function openVoting(array $ballot, \DateTimeImmutable $now): void
+    {
+        $this->ballot = $ballot;
+        $this->votingOpenedAt = $now;
+    }
+
+    /** @param list<array{user_id: int, name: string, points: int, rank: int}> $result */
+    public function close(array $result, \DateTimeImmutable $now): void
+    {
+        $this->result = $result;
+        $this->closedAt = $now;
     }
 }
