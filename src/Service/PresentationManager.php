@@ -10,6 +10,7 @@ use App\Repository\SubmissionRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Clock\ClockInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Lock\LockFactory;
 
 class PresentationManager
@@ -22,6 +23,8 @@ class PresentationManager
         private FridayCalendar $calendar,
         private ClockInterface $clock,
         private LockFactory $locks,
+        #[Autowire('%kernel.environment%')]
+        private string $environment,
     ) {
     }
 
@@ -47,9 +50,11 @@ class PresentationManager
 
     public function canStartOn(\DateTimeImmutable $friday): bool
     {
-        // TODO: REATIVAR a validação de data após os testes manuais. Esta regra precisa voltar ao código.
-        // Para restaurar, descomente o retorno original e remova o retorno temporário abaixo.
-        // return $this->calendar->isFriday($friday) && $friday->format('Y-m-d') <= $this->calendar->today()->format('Y-m-d');
+        // Production enforces the date; development and tests allow early rehearsals.
+        if ('prod' === $this->environment) {
+            return $this->calendar->isFriday($friday) && $friday->format('Y-m-d') <= $this->calendar->today()->format('Y-m-d');
+        }
+
         return $this->calendar->isFriday($friday);
     }
 

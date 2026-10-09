@@ -28,6 +28,9 @@ tests/
 var/
 vendor/
 .editorconfig
+.env
+.env.*
+!.env.example
 .env.*.local
 .env.local
 .env.local.php
@@ -37,3 +40,9 @@ vendor/
 .aws/
 graphify-out/
 .phpunit.cache/
+.mypy_cache/
+.ruff_cache/
+**/__pycache__/
+backups/
+.deploy/
+ops/

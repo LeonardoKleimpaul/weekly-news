@@ -1,0 +1,11 @@
+[Unit]
+Description=Backup consistente do Weekly News
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/srv/weekly-news
+ExecStart=/srv/weekly-news/bin/backup /srv/weekly-news/.env.production /srv/weekly-news/backups
+UMask=0077
+Nice=10

@@ -9,6 +9,9 @@
 /vendor/
 .env
 graphify-out/
+/.env.production
+/backups/
+/.deploy/
 ###< symfony/framework-bundle ###
 
 ###> phpunit/phpunit ###

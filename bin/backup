@@ -1,0 +1,38 @@
+#!/bin/sh
+set -eu
+umask 077
+
+project_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+env_file=${1:-"$project_dir/.env.production"}
+backup_root=${2:-"$project_dir/backups"}
+
+compose() {
+    docker compose --env-file "$env_file" -f "$project_dir/compose.yaml" -f "$project_dir/compose.prod.yaml" "$@"
+}
+
+compose config --quiet
+mkdir -p "$backup_root"
+backup_path=$(mktemp -d "$backup_root/weekly-news-$(date -u +%Y%m%dT%H%M%SZ)-XXXXXX")
+was_running=$(compose ps --status running --quiet php)
+
+# Pause writes so the database and photos describe the same moment.
+finish() {
+    backup_exit_code=$?
+    trap - EXIT
+    if [ -n "$was_running" ]; then
+        compose start php >&2 || backup_exit_code=1
+    fi
+    exit "$backup_exit_code"
+}
+trap finish EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+compose stop php >&2
+compose exec -T database sh -c 'exec pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --format=custom' > "$backup_path/database.dump"
+compose run --rm -T --no-deps --entrypoint tar php -C /app/var/uploads -czf - . > "$backup_path/uploads.tar.gz"
+(
+    cd "$backup_path"
+    sha256sum database.dump uploads.tar.gz > SHA256SUMS
+)
+printf '%s\n' "$backup_path"

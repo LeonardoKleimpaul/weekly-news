@@ -1,0 +1,70 @@
+#!/bin/sh
+set -eu
+umask 077
+
+if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+    echo 'Uso: bin/deploy IMAGEM_COM_TAG_OU_DIGEST [ARQUIVO_ENV]' >&2
+    exit 2
+fi
+
+project_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+env_file=${2:-"$project_dir/.env.production"}
+state_dir=${DEPLOY_STATE_DIR:-"$project_dir/.deploy"}
+export APP_IMAGE="$1"
+case "$APP_IMAGE" in
+    ''|*[!a-zA-Z0-9._:/@-]*)
+        echo 'Informe uma referencia de imagem Docker valida.' >&2
+        exit 2
+        ;;
+esac
+
+compose() {
+    docker compose --env-file "$env_file" -f "$project_dir/compose.yaml" -f "$project_dir/compose.prod.yaml" "$@"
+}
+
+compose config --quiet
+mkdir -p "$state_dir"
+previous_container=$(compose ps --all --quiet php)
+previous_image=
+if [ -n "$previous_container" ]; then
+    previous_image=$(docker inspect --format '{{.Config.Image}}' "$previous_container")
+fi
+
+# Commit tags/digests are immutable; cached images avoid unnecessary downloads.
+compose pull --policy missing php database
+compose up -d --wait database
+
+on_failure() {
+    echo 'O deploy falhou. O PHP pode estar parado; consulte o procedimento de recuperação no README.' >&2
+    if [ -n "$previous_image" ]; then
+        printf 'Imagem anterior: %s\n' "$previous_image" >&2
+    fi
+}
+trap on_failure EXIT
+
+compose stop php
+backup_path=$("$project_dir/bin/backup" "$env_file")
+printf 'Backup anterior ao deploy: %s\n' "$backup_path"
+
+compose run --rm -T --no-deps php php bin/console doctrine:migrations:migrate --no-interaction --all-or-nothing
+compose run --rm -T --no-deps php php bin/console doctrine:schema:validate
+compose up -d --wait --no-build php
+
+# Keep future Compose commands and scheduled backups on the deployed image.
+updated_env=$(mktemp "$env_file.XXXXXX")
+if ! awk -v image="$APP_IMAGE" '
+    /^APP_IMAGE=/ { print "APP_IMAGE=" image; found = 1; next }
+    { print }
+    END { if (!found) print "APP_IMAGE=" image }
+' "$env_file" > "$updated_env"; then
+    rm -f "$updated_env"
+    exit 1
+fi
+mv "$updated_env" "$env_file"
+
+if [ -n "$previous_image" ]; then
+    printf '%s\n' "$previous_image" > "$state_dir/previous-image"
+fi
+printf '%s\n' "$APP_IMAGE" > "$state_dir/current-image"
+trap - EXIT
+echo 'Deploy concluído; login e serviços saudáveis.'

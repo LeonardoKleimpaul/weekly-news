@@ -76,6 +76,7 @@ CMD [ "frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile", "--watch" ]
 FROM frankenphp_base AS frankenphp_prod_builder
 
 ENV APP_ENV=prod
+ENV APP_DEBUG=0
 
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
@@ -87,9 +88,11 @@ RUN composer install --no-cache --prefer-dist --no-dev --no-autoloader --no-scri
 
 # copy sources
 COPY --link --exclude=frankenphp/ . ./
+# Build from committed defaults, never from a developer's local environment.
+COPY --link .env.example .env
 
 RUN <<-EOF
-	mkdir -p var/cache var/log var/share var/uploads
+	mkdir -p var/cache var/log var/share var/uploads/prod var/sessions/prod
 	composer dump-autoload --classmap-authoritative --no-dev
 	composer dump-env prod
 	composer run-script --no-dev post-install-cmd
@@ -123,6 +126,8 @@ FROM debian:13-slim AS frankenphp_prod
 SHELL ["/bin/bash", "-euxo", "pipefail", "-c"]
 
 ENV APP_ENV=prod
+ENV APP_DEBUG=0
+ENV RUN_MIGRATIONS=0
 ENV PHP_INI_SCAN_DIR=":/usr/local/etc/php/app.conf.d"
 
 COPY --from=frankenphp_prod_builder /usr/local/bin/frankenphp /usr/local/bin/frankenphp
@@ -165,5 +170,5 @@ WORKDIR /app
 
 ENTRYPOINT ["docker-entrypoint"]
 
-HEALTHCHECK --start-period=60s CMD php -r 'exit(false === @file_get_contents("http://localhost:2019/metrics", context: stream_context_create(["http" => ["timeout" => 5]])) ? 1 : 0);'
+HEALTHCHECK --start-period=60s CMD php -r '$page = @file_get_contents("http://localhost/login", context: stream_context_create(["http" => ["header" => "Host: php\r\n", "timeout" => 5, "follow_location" => 0]])); exit(false !== $page && str_contains($page, "name=\"_csrf_token\"") ? 0 : 1);'
 CMD [ "frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile" ]

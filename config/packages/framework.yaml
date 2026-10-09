@@ -9,6 +9,13 @@ framework:
     #esi: true
     #fragments: true
 
+when@prod:
+    framework:
+        session:
+            cookie_secure: true
+            cookie_samesite: lax
+            save_path: '%kernel.project_dir%/var/sessions/prod'
+
 when@test:
     framework:
         test: true

@@ -1,0 +1,10 @@
+[Unit]
+Description=Backup diario do Weekly News (03h de Brasilia)
+
+[Timer]
+OnCalendar=*-*-* 06:00:00 UTC
+Persistent=true
+RandomizedDelaySec=5m
+
+[Install]
+WantedBy=timers.target
