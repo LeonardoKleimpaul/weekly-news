@@ -1,0 +1,63 @@
+# Isolated simulation of Railway's TLS proxy, app volume and pre-deploy migration.
+services:
+  database:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: app_deployment_test
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: railway-ci-password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app_deployment_test"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - database:/var/lib/postgresql/data
+
+  migrations:
+    image: ${APP_IMAGE:-weekly-news-railway-check:local}
+    profiles: ["tools"]
+    environment: &app-environment
+      APP_SECRET: railway-ci-secret-for-isolated-testing-only
+      DATABASE_URL: postgresql://app:railway-ci-password@database:5432/app_deployment_test?serverVersion=16&charset=utf8
+      APP_STORAGE_DIR: /app/storage
+      PORT: "9090"
+      RAILWAY_PUBLIC_DOMAIN: localhost:18444
+    command: ["php", "bin/console", "doctrine:migrations:migrate", "--no-interaction", "--all-or-nothing"]
+    depends_on:
+      database:
+        condition: service_healthy
+
+  app:
+    image: ${APP_IMAGE:-weekly-news-railway-check:local}
+    user: "0"
+    environment: *app-environment
+    command: ["start-railway"]
+    healthcheck:
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - storage:/app/storage
+    depends_on:
+      database:
+        condition: service_healthy
+
+  proxy:
+    image: caddy:2-alpine
+    healthcheck:
+      test: ["CMD", "wget", "--no-check-certificate", "-q", "-O", "/dev/null", "https://localhost/login"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    ports:
+      - "127.0.0.1:18444:443"
+    volumes:
+      - ./Caddyfile.railway-test:/etc/caddy/Caddyfile:ro
+    depends_on:
+      app:
+        condition: service_healthy
+
+volumes:
+  database:
+  storage:

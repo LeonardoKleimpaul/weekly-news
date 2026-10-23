@@ -1,0 +1,13 @@
+{
+    "rules": {
+        "block-no-empty": true,
+        "color-no-invalid-hex": true,
+        "declaration-block-no-duplicate-properties": [
+            true,
+            { "ignore": ["consecutive-duplicates-with-different-values"] }
+        ],
+        "function-calc-no-unspaced-operator": true,
+        "property-no-unknown": true,
+        "unit-no-unknown": true
+    }
+}

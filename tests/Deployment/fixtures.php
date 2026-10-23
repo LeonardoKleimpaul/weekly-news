@@ -23,6 +23,7 @@ $future = $today->modify('next friday');
 $password = 'Production-smoke-123';
 $photo = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j7S8AAAAASUVORK5CYII=');
 $users = [];
+$photoDirectory = $kernel->getContainer()->getParameter('app.storage_dir').'/uploads/prod';
 foreach (range(1, 4) as $number) {
     $user = new User();
     $user->setName('Participante '.$number);
@@ -34,7 +35,7 @@ foreach (range(1, 4) as $number) {
 
     $submission = new Submission($user, $past);
     $filename = bin2hex(random_bytes(16)).'.png';
-    file_put_contents('/app/var/uploads/prod/'.$filename, $photo);
+    file_put_contents($photoDirectory.'/'.$filename, $photo);
     $submission->setPhotoFilename($filename);
     $submission->setText('História de produção do participante '.$number);
     $em->persist($submission);

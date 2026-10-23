@@ -163,6 +163,8 @@ COPY --chown=www-data:0 --from=frankenphp_prod_builder /app/var /app/var
 RUN chmod g=u /app/var
 
 COPY --link --chmod=755 frankenphp/docker-entrypoint.sh /usr/local/bin/docker-entrypoint
+COPY --link --chmod=755 frankenphp/start-railway.sh /usr/local/bin/start-railway
+COPY --link frankenphp/Caddyfile.railway /etc/frankenphp/Caddyfile.railway
 
 USER www-data
 
@@ -170,5 +172,5 @@ WORKDIR /app
 
 ENTRYPOINT ["docker-entrypoint"]
 
-HEALTHCHECK --start-period=60s CMD php -r '$page = @file_get_contents("http://localhost/login", context: stream_context_create(["http" => ["header" => "Host: php\r\n", "timeout" => 5, "follow_location" => 0]])); exit(false !== $page && str_contains($page, "name=\"_csrf_token\"") ? 0 : 1);'
+HEALTHCHECK --start-period=60s CMD php -r '$port = getenv("PORT") ?: 80; $page = @file_get_contents("http://localhost:".$port."/login", context: stream_context_create(["http" => ["header" => "Host: php\r\n", "timeout" => 5, "follow_location" => 0]])); exit(false !== $page && str_contains($page, "name=\"_csrf_token\"") ? 0 : 1);'
 CMD [ "frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile" ]

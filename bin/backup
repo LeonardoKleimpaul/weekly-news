@@ -2,7 +2,7 @@
 set -eu
 umask 077
 
-project_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+project_dir=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 env_file=${1:-"$project_dir/.env.production"}
 backup_root=${2:-"$project_dir/backups"}
 
@@ -29,6 +29,8 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 compose stop php >&2
+# Credentials must be expanded inside the database container.
+# shellcheck disable=SC2016
 compose exec -T database sh -c 'exec pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --format=custom' > "$backup_path/database.dump"
 compose run --rm -T --no-deps --entrypoint tar php -C /app/var/uploads -czf - . > "$backup_path/uploads.tar.gz"
 (

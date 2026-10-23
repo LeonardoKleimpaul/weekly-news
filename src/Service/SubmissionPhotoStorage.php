@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 class SubmissionPhotoStorage
 {
     public function __construct(
-        #[Autowire('%kernel.project_dir%/var/uploads/%kernel.environment%')]
+        #[Autowire('%app.storage_dir%/uploads/%kernel.environment%')]
         private string $directory,
         private Filesystem $filesystem,
         private LoggerInterface $logger,

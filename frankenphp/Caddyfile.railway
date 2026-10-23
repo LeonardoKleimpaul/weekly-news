@@ -1,0 +1,36 @@
+{
+	admin off
+	auto_https off
+
+	log {
+		level WARN
+	}
+
+	frankenphp {
+		num_threads 1
+		max_threads 2
+	}
+}
+
+# Railway terminates HTTPS and forwards requests to this HTTP port.
+:{$PORT:8080} {
+	root /app/public
+	encode zstd br gzip
+
+	@phpRoute {
+		not file {path}
+	}
+	rewrite @phpRoute index.php
+
+	@frontController path index.php
+	php @frontController {
+		worker {
+			file ./public/index.php
+			num 1
+		}
+	}
+
+	file_server {
+		hide *.php
+	}
+}

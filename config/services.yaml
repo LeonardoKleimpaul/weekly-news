@@ -7,6 +7,8 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    app.default_storage_dir: '%kernel.project_dir%/var'
+    app.storage_dir: '%env(default:app.default_storage_dir:APP_STORAGE_DIR)%'
 
 services:
     # default configuration for services in *this* file

@@ -43,6 +43,12 @@ jobs:
         run: |
           cp .env.example .env
           docker compose up --wait --no-build
+      - name: Validate PHP and Symfony configuration
+        run: |
+          docker compose exec -T php sh -c 'find src config migrations tests public -type f -name "*.php" -print0 | xargs -0 -n 1 php -l'
+          docker compose exec -T php bin/console lint:container
+          docker compose exec -T php bin/console lint:twig templates/
+          docker compose exec -T php bin/console lint:yaml config/
       - name: Check HTTP reachability
         run: curl -v --fail-with-body http://localhost
       - name: Check login page
@@ -74,11 +80,25 @@ jobs:
         uses: super-linter/super-linter/slim@v8
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VALIDATE_CHECKOV: false
-          VALIDATE_TRIVY: false
-          VALIDATE_BIOME_FORMAT: false
-          VALIDATE_BIOME_LINT: false
-          VALIDATE_PYTHON_BLACK: false
+          # Select checks that match the project. PHP runs in its own container.
+          VALIDATE_BASH: true
+          VALIDATE_BASH_EXEC: true
+          VALIDATE_CSS: true
+          VALIDATE_DOCKERFILE_HADOLINT: true
+          VALIDATE_GITHUB_ACTIONS: true
+          VALIDATE_GITHUB_ACTIONS_ZIZMOR: true
+          VALIDATE_GITLEAKS: true
+          VALIDATE_GIT_MERGE_CONFLICT_MARKERS: true
+          VALIDATE_JAVASCRIPT_ES: true
+          VALIDATE_JSON: true
+          VALIDATE_PYTHON_FLAKE8: true
+          VALIDATE_PYTHON_ISORT: true
+          VALIDATE_PYTHON_MYPY: true
+          VALIDATE_PYTHON_PYLINT: true
+          VALIDATE_PYTHON_RUFF: true
+          VALIDATE_PYTHON_RUFF_FORMAT: true
+          VALIDATE_XML: true
+          VALIDATE_YAML: true
   production:
     name: Production image
     needs: [tests, lint]
@@ -142,9 +162,22 @@ jobs:
           docker compose -f compose.yaml -f compose.prod.yaml run --rm -T --no-deps --entrypoint sh php -c 'find /app/var/uploads/prod -type f -delete; tar -xzf - -C /app/var/uploads' < "$backup_path/uploads.tar.gz"
           docker compose -f compose.yaml -f compose.prod.yaml up -d --wait --no-build php
           python3 tests/Deployment/smoke.py "$RUNNER_TEMP/production-fixtures.json" --verify
+      - name: Test Railway startup behind HTTPS proxy
+        env:
+          DEPLOYMENT_TEST_BASE_URL: https://localhost:18444
+        run: |
+          docker compose -p weekly-news-railway-check -f tests/Deployment/railway.compose.yaml run --rm -T migrations
+          docker compose -p weekly-news-railway-check -f tests/Deployment/railway.compose.yaml up -d --wait app proxy
+          docker compose -p weekly-news-railway-check -f tests/Deployment/railway.compose.yaml exec -T --user www-data app php < tests/Deployment/fixtures.php > "$RUNNER_TEMP/railway-fixtures.json"
+          python3 tests/Deployment/smoke.py "$RUNNER_TEMP/railway-fixtures.json"
+          docker compose -p weekly-news-railway-check -f tests/Deployment/railway.compose.yaml up -d --wait --force-recreate app
+          python3 tests/Deployment/smoke.py "$RUNNER_TEMP/railway-fixtures.json" --verify
+          docker compose -p weekly-news-railway-check -f tests/Deployment/railway.compose.yaml exec -T app sh -c 'test "$(awk "/^Uid:/ {print \$2}" /proc/1/status)" = 33'
       - name: Show production logs on failure
         if: failure()
-        run: docker compose -f compose.yaml -f compose.prod.yaml logs --tail 100
+        run: |
+          docker compose -f compose.yaml -f compose.prod.yaml logs --tail 100
+          docker compose -p weekly-news-railway-check -f tests/Deployment/railway.compose.yaml logs --tail 100
       - name: Publish tested commit image to GHCR
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
@@ -154,7 +187,9 @@ jobs:
           printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
           docker tag "$APP_IMAGE" "$image"
           docker push "$image"
-          printf 'Imagem publicada: `%s`\n' "$image" >> "$GITHUB_STEP_SUMMARY"
+          printf 'Imagem publicada: %s\n' "$image" >> "$GITHUB_STEP_SUMMARY"
       - name: Stop isolated stack
         if: always()
-        run: docker compose -f compose.yaml -f compose.prod.yaml down --remove-orphans --volumes
+        run: |
+          docker compose -p weekly-news-railway-check -f tests/Deployment/railway.compose.yaml down --remove-orphans --volumes
+          docker compose -f compose.yaml -f compose.prod.yaml down --remove-orphans --volumes

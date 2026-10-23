@@ -102,7 +102,72 @@ docker compose exec php php bin/phpunit
 
 O GitHub Actions também executa as migrations, os testes e a validação do schema. Além disso, constrói a imagem de produção e testa por HTTP quatro participantes, envios, apresentação, votação, empate, ranking e revisão. Uma instância isolada verifica a persistência após recriar o container e restaurar banco e fotos de um backup; esses testes não usam o banco do site.
 
-## Produção
+## Produção no Railway
+
+O Railway constrói a imagem diretamente do GitHub usando o `Dockerfile`. O `railway.json` configura o servidor, o healthcheck em `/login` e as migrations antes de cada deploy. O HTTPS fica por conta do Railway.
+
+1. Envie as alterações deste projeto para o GitHub, incluindo `railway.json` e os arquivos de `frankenphp/`.
+2. No Railway, crie um **New Project → Deploy from GitHub repo** e selecione `weekly-news`.
+3. Dentro do mesmo projeto, adicione **New → Database → PostgreSQL**. Nos exemplos, o serviço se chama `Postgres`; ajuste a referência se escolher outro nome.
+4. No serviço **weekly-news**, abra **Variables** e configure:
+
+   | Variável | Valor |
+   | --- | --- |
+   | `APP_SECRET` | Um valor gerado com `openssl rand -hex 32` |
+   | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
+   | `APP_STORAGE_DIR` | `/app/storage` |
+   | `RAILWAY_RUN_UID` | `0` |
+
+5. Anexe um **Volume** ao serviço **weekly-news**, com mount path **`/app/storage`**. Esse volume guarda as fotos e as sessões; o PostgreSQL tem seu próprio volume. Mantenha apenas **uma réplica** da aplicação.
+6. Aplique as alterações e aguarde o deploy. Em **Settings → Networking → Generate Domain**, gere o endereço público. Se pedir a porta, use **8080**. A variável `PORT`, quando fornecida pelo Railway, é respeitada automaticamente.
+
+O primeiro build pode falhar enquanto o banco e as variáveis ainda não foram configurados; depois de concluir a configuração, faça um novo deploy. Não é necessário configurar Mercure, certificados ou executar `bin/deploy` no Railway. A apresentação continua sincronizada pelas consultas periódicas existentes.
+
+`RAILWAY_RUN_UID=0` permite preparar as permissões do volume na inicialização; o servidor então passa a executar como `www-data`. `APP_STORAGE_DIR` deve ficar nas variáveis do serviço, para os comandos de console usarem o mesmo local que o servidor. O cache permanece fora do volume, evitando reutilizar o código compilado de um deploy anterior.
+
+### Primeiro administrador
+
+Instale a [CLI do Railway](https://docs.railway.com/guides/cli). Na pasta do projeto, faça login, selecione o projeto/ambiente e entre no container da aplicação:
+
+```bash
+railway login
+railway link
+railway ssh --service weekly-news
+```
+
+Na sessão aberta, execute:
+
+```bash
+cd /app
+php bin/console app:create-admin seu-email@example.com "Seu nome"
+```
+
+Informe a senha solicitada e entre no endereço gerado pelo Railway. Se o serviço tiver outro nome, substitua `weekly-news` no comando. Use `railway ssh` para acessar o banco pela rede privada do projeto.
+
+### Custos e backups
+
+Consulte os [preços atuais do Railway](https://railway.com/pricing). O trial oferece US$ 5 em créditos por até 30 dias. O Hobby tem cobrança mínima de US$ 5/mês, incluindo esse valor em consumo; uso excedente é cobrado à parte. Esta configuração precisa de dois volumes: um para o banco e outro para a aplicação. O trial comporta essa estrutura, mas o plano Free após o trial permite apenas um volume por projeto.
+
+Configure backups dos **dois volumes** no Railway e mantenha cópias externas dos dados importantes. Os scripts `bin/backup`, `bin/deploy` e a rotina systemd descritos abaixo são específicos da instalação com Docker Compose em VPS. Backups não são ativados por este repositório.
+
+### Verificação local do ambiente Railway
+
+O teste usa um PostgreSQL isolado, um volume inicialmente pertencente a root e um proxy HTTPS na porta local 18444. Reaproveita os mesmos fluxos HTTP de produção e verifica fotos e sessões após recriar a aplicação:
+
+```bash
+docker build --target frankenphp_prod -t weekly-news-railway-check:local .
+docker compose -p weekly-news-railway-check -f tests/Deployment/railway.compose.yaml run --rm -T migrations
+docker compose -p weekly-news-railway-check -f tests/Deployment/railway.compose.yaml up -d --wait app proxy
+docker compose -p weekly-news-railway-check -f tests/Deployment/railway.compose.yaml exec -T --user www-data app php < tests/Deployment/fixtures.php > /tmp/railway-fixtures.json
+DEPLOYMENT_TEST_BASE_URL=https://localhost:18444 python3 tests/Deployment/smoke.py /tmp/railway-fixtures.json
+docker compose -p weekly-news-railway-check -f tests/Deployment/railway.compose.yaml up -d --wait --force-recreate app
+DEPLOYMENT_TEST_BASE_URL=https://localhost:18444 python3 tests/Deployment/smoke.py /tmp/railway-fixtures.json --verify
+docker compose -p weekly-news-railway-check -f tests/Deployment/railway.compose.yaml down --volumes
+```
+
+O GitHub Actions também executa essa verificação antes de publicar a imagem.
+
+## Produção em VPS
 
 A configuração usa uma instância PHP e PostgreSQL, com HTTPS automático pelo Caddy. O PHP roda sem Xdebug e dependências de desenvolvimento, com debug desativado. Banco, fotos, sessões e certificados ficam em volumes persistentes. O PostgreSQL não publica uma porta externa.
 

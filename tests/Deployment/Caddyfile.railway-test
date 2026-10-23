@@ -1,0 +1,9 @@
+{
+	admin off
+	skip_install_trust
+}
+
+https://localhost {
+	tls internal
+	reverse_proxy app:9090
+}

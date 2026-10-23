@@ -14,7 +14,7 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class UserFlowTest extends WebTestCase
 {
-    private const PASSWORD = 'Senha-do-teste-123';
+    private const PASSWORD = 'Senha-do-teste-123'; // gitleaks:allow -- fixed functional-test password
     private KernelBrowser $client;
     private User $admin;
     private User $member;

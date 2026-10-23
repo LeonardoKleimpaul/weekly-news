@@ -14,7 +14,7 @@ when@prod:
         session:
             cookie_secure: true
             cookie_samesite: lax
-            save_path: '%kernel.project_dir%/var/sessions/prod'
+            save_path: '%app.storage_dir%/sessions/prod'
 
 when@test:
     framework:

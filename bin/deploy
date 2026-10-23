@@ -7,7 +7,7 @@ if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
     exit 2
 fi
 
-project_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+project_dir=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 env_file=${2:-"$project_dir/.env.production"}
 state_dir=${DEPLOY_STATE_DIR:-"$project_dir/.deploy"}
 export APP_IMAGE="$1"
