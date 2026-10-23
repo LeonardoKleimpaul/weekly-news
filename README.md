@@ -104,9 +104,9 @@ O GitHub Actions também executa as migrations, os testes e a validação do sch
 
 ## Produção no Railway
 
-O Railway constrói a imagem diretamente do GitHub usando o `Dockerfile`. O `railway.json` configura o servidor, o healthcheck em `/login` e as migrations antes de cada deploy. O HTTPS fica por conta do Railway.
+O Railway constrói a imagem diretamente do GitHub usando o `Dockerfile`. O HTTPS fica por conta do Railway. Configure a inicialização, as migrations e o healthcheck no painel: [serviços novos não usam mais `railway.json` ou `railway.toml`](https://docs.railway.com/config-as-code).
 
-1. Envie as alterações deste projeto para o GitHub, incluindo `railway.json` e os arquivos de `frankenphp/`.
+1. Envie as alterações deste projeto para o GitHub, incluindo o `Dockerfile` e os arquivos de `frankenphp/`.
 2. No Railway, crie um **New Project → Deploy from GitHub repo** e selecione `weekly-news`.
 3. Dentro do mesmo projeto, adicione **New → Database → PostgreSQL**. Nos exemplos, o serviço se chama `Postgres`; ajuste a referência se escolher outro nome.
 4. No serviço **weekly-news**, abra **Variables** e configure:
@@ -119,9 +119,21 @@ O Railway constrói a imagem diretamente do GitHub usando o `Dockerfile`. O `rai
    | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
    | `APP_STORAGE_DIR` | `/app/storage` |
    | `RAILWAY_RUN_UID` | `0` |
+   | `PORT` | `8080` |
 
 5. Anexe um **Volume** ao serviço **weekly-news**, com mount path **`/app/storage`**. Esse volume guarda as fotos e as sessões; o PostgreSQL tem seu próprio volume. Mantenha apenas **uma réplica** da aplicação.
-6. Aplique as alterações e aguarde o deploy. Em **Settings → Networking → Generate Domain**, gere o endereço público. Se pedir a porta, use **8080**. A variável `PORT`, quando fornecida pelo Railway, é respeitada automaticamente.
+6. Em **weekly-news → Settings → Deploy**, preencha:
+
+   | Campo | Valor |
+   | --- | --- |
+   | Start Command | `/usr/local/bin/start-railway` |
+   | Pre-deploy Command | `php bin/console doctrine:migrations:migrate --env=prod --no-interaction --all-or-nothing` |
+   | Healthcheck Path | `/login` |
+   | Healthcheck Timeout | `300` segundos |
+
+7. Aplique as alterações e aguarde o deploy. Em **Settings → Networking → Generate Domain**, gere o endereço público e selecione a porta **8080**, correspondente à variável `PORT`.
+
+O comando de inicialização precisa estar preenchido. O comando padrão da imagem atende à instalação em VPS e tenta gerenciar certificados; `/usr/local/bin/start-railway` usa HTTP na porta `PORT`, atrás do HTTPS fornecido pelo Railway.
 
 O primeiro build pode falhar enquanto o banco e as variáveis ainda não foram configurados; depois de concluir a configuração, faça um novo deploy. Não é necessário configurar Mercure, certificados ou executar `bin/deploy` no Railway. A apresentação continua sincronizada pelas consultas periódicas existentes.
 

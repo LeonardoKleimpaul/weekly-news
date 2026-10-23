@@ -32,7 +32,9 @@ services:
     image: ${APP_IMAGE:-weekly-news-railway-check:local}
     user: "0"
     environment: *app-environment
-    command: ["start-railway"]
+    # Railway's Start Command replaces the Docker image entrypoint.
+    entrypoint: ["/usr/local/bin/start-railway"]
+    command: []
     healthcheck:
       interval: 2s
       timeout: 5s
