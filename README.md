@@ -113,6 +113,8 @@ O Railway constrói a imagem diretamente do GitHub usando o `Dockerfile`. O `rai
 
    | Variável | Valor |
    | --- | --- |
+   | `APP_ENV` | `prod` |
+   | `APP_DEBUG` | `0` |
    | `APP_SECRET` | Um valor gerado com `openssl rand -hex 32` |
    | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
    | `APP_STORAGE_DIR` | `/app/storage` |
